@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Exploradores del Mar - Josue Molina</title>
+<style>
+  :root{
+    --bg:#bfefff; --card:#ffffff; --accent:#0b6e86; --soft:#f0fbff;
+    --bubble: rgba(255,255,255,0.6);
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg),#8fd1e6);}
+  .app{max-width:1100px;margin:18px auto;padding:18px;background:linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.8));border-radius:16px;box-shadow:0 8px 24px rgba(5,50,70,0.12);overflow:hidden}
+  header{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid rgba(0,0,0,0.04)}
+  .logo{width:78px;height:78px;border-radius:14px;background:linear-gradient(135deg,#6fd3e0,#2b98b0);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:18px;box-shadow:0 6px 14px rgba(11,110,134,0.18)}
+  .title{font-size:20px;color:var(--accent);margin:0}
+  .subtitle{font-size:13px;color:#2b5564;margin:0.1rem 0 0 0}
+  main{display:grid;grid-template-columns:360px 1fr;gap:18px;padding:18px}
+  .left{padding:12px}
+  .host{display:flex;gap:12px;align-items:center;padding:10px;background:var(--soft);border-radius:12px}
+  .host .avatar{width:64px;height:64px;border-radius:12px;background:#fee;display:flex;align-items:center;justify-content:center;font-weight:700;color:#b85;border:2px solid rgba(0,0,0,0.04)}
+  .controls{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+  button.primary{background:linear-gradient(90deg,#2aa0c9,#0b6e86);color:white;border:none;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:700}
+  button.ghost{background:transparent;border:2px solid rgba(11,110,134,0.12);padding:8px;border-radius:9px;cursor:pointer}
+  .animals-list{margin-top:14px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .animal-bubble{background:var(--bubble);border-radius:12px;padding:8px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:transform .18s}
+  .animal-bubble:hover{transform:translateY(-6px)}
+  .animal-thumb{width:56px;height:56px;flex:0 0 56px;object-fit:contain;border-radius:8px;background:white;padding:6px;box-shadow:0 6px 12px rgba(11,110,134,0.04)}
+  .right{padding:12px}
+  .stage{background:linear-gradient(180deg,#e8f9ff, #d0f0fb);border-radius:14px;padding:12px;min-height:520px;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.6);position:relative}
+  .stage-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:8px}
+  .card{background: #fff;border-radius:12px;padding:8px;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 6px 12px rgba(11,110,134,0.06);cursor:pointer;transition:transform .22s, box-shadow .2s}
+  .card:hover{transform:translateY(-8px);box-shadow:0 12px 24px rgba(11,110,134,0.14)}
+  .animal-img{width:120px;height:120px;object-fit:contain;border-radius:10px;background:transparent}
+  .name{font-weight:800;color:var(--accent);margin:2px 0 0 0}
+  .sub{font-size:13px;color:#44778a;margin:0}
+  footer{padding:12px;text-align:center;color:#0b5567}
+  .game-panel{display:none;padding:12px;gap:12px}
+  .game-active{display:block}
+  .controls-row{display:flex;gap:8px;flex-wrap:wrap}
+  .score{background:#fff;border-radius:10px;padding:8px}
+  @media(max-width:980px){main{grid-template-columns:1fr;gap:12px}.stage{min-height:540px}.stage-grid{grid-template-columns:repeat(2,1fr)}}
+  .modal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(3,20,30,0.4);display:flex;align-items:center;justify-content:center;z-index:9999}
+  .dialog{background:white;padding:14px;border-radius:12px;max-width:680px;width:92%}
+  .tiny{font-size:12px;color:#244}
+  .mem-thumb{width:56px;height:56px;object-fit:contain;border-radius:8px;background:white;padding:6px}
+  /* Certificate styling (print friendly) */
+  .cert-print{display:none}
+  @media print{
+    body *{visibility:hidden}
+    .cert-print, .cert-print *{visibility:visible}
+    .cert-print{position:fixed;left:0;top:0;width:100%}
+  }
+  /* final screen */
+  .final-screen{display:none;padding:18px;text-align:center}
+  .final-active{display:block}
+  .confetti-canvas{position:absolute;left:0;top:0;right:0;bottom:0;pointer-events:none}
+  .reward-stars{display:flex;justify-content:center;gap:12px;margin-top:12px}
+  .star{width:56px;height:56px;background:linear-gradient(180deg,#ffd36a,#ffb84d);border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#8a4b00;transform:scale(0);animation:pop .7s ease forwards}
+  .star.delay-1{animation-delay:.12s}.star.delay-2{animation-delay:.24s}.star.delay-3{animation-delay:.36s}
+  @keyframes pop{0%{transform:scale(0)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+  /* music control */
+  .music-control{display:flex;gap:8px;align-items:center}
+  .btn-small{padding:6px 8px;border-radius:8px;border:1px solid rgba(11,110,134,0.12);background:white;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="app" role="application" aria-label="Exploradores del Mar">
+  <header>
+    <div class="logo">EM</div>
+    <div>
+      <h1 class="title">Exploradores del Mar</h1>
+      <p class="subtitle">Anfitrión: <strong>Josue Molina</strong> · Aprende los nombres en inglés con juegos</p>
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
+      <div class="music-control" title="Música de fondo">
+        <button id="musicToggle" class="btn-small">▶ Música</button>
+        <input id="musicVol" type="range" min="0" max="1" step="0.05" value="0.35" />
+      </div>
+      <button id="openFinal" class="btn-small" title="Ver pantalla final">Pantalla final 🎉</button>
+    </div>
+  </header>
+
+  <main>
+    <aside class="left">
+      <div class="host">
+        <div>
+          <div class="avatar" id="hostAvatar">JM</div>
+        </div>
+        <div>
+          <div style="font-weight:800;color:#0b6376">Josue Molina</div>
+          <div style="font-size:13px;color:#2b5564">¡Bienvenidos, pequeños exploradores!</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="primary" id="btnGallery">Ir a la galería de animales</button>
+        <button class="ghost" id="btnMemory">Jugar Memory</button>
+        <button class="ghost" id="btnGuess">Adivina el Sonido</button>
+        <div class="score" id="feedback">Toca un animal para escuchar su nombre y sonido.</div>
+      </div>
+
+      <div style="margin-top:12px">
+        <div style="font-weight:800;color:#0b6376;margin-bottom:8px">Animales</div>
+        <div class="animals-list" id="animalsList"></div>
+      </div>
+
+      <div style="margin-top:14px">
+        <div style="font-weight:800;color:#0b6376;margin-bottom:8px">Certificado</div>
+        <input id="studentName" placeholder="Nombre del niño / niña" style="padding:8px;border-radius:8px;border:1px solid #dce;" />
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="primary" id="printCert">Imprimir / Descargar certificado</button>
+          <button class="ghost" id="saveProgress">Guardar progreso</button>
+        </div>
+        <div style="font-size:12px;color:#446;margin-top:8px">El certificado incluirá el nombre y la puntuación actual.</div>
+      </div>
+
+    </aside>
+
+    <section class="right">
+      <div class="stage">
+        <canvas id="confetti" class="confetti-canvas"></canvas>
+
+        <div id="galleryPanel">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-weight:900;color:#084">Mapa Submarino</div>
+            <div style="font-size:13px;color:#1b5">Explora y toca cualquier animal</div>
+          </div>
+          <div class="stage-grid" id="stageGrid"></div>
+        </div>
+
+        <div id="memoryGame" class="game-panel">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-weight:900;color:#084">Juego Memory</div>
+            <div class="tiny">Encuentra pares y escucha el nombre</div>
+          </div>
+          <div id="memoryBoard" style="margin-top:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
+          <div style="margin-top:8px" class="controls-row">
+            <button class="primary" id="memRestart">Reiniciar</button>
+            <div class="score" id="memScore">Intentos: 0 · Aciertos: 0</div>
+          </div>
+        </div>
+
+        <div id="guessGame" class="game-panel">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-weight:900;color:#084">Adivina el Sonido</div>
+            <div class="tiny">Escucha y elige qué animal es</div>
+          </div>
+          <div style="margin-top:12px" id="guessArea"></div>
+          <div style="margin-top:12px" class="controls-row">
+            <button class="primary" id="playSoundBtn">Reproducir Sonido</button>
+            <button class="ghost" id="guessNext">Siguiente</button>
+            <div class="score" id="guessScore">Puntos: 0</div>
+          </div>
+        </div>
+
+        <div id="finalScreen" class="final-screen">
+          <h2 id="finalTitle">¡Felicidades, Explorador!</h2>
+          <p id="finalMsg">Excelente trabajo aprendiendo los amigos del mar.</p>
+          <div class="reward-stars" id="rewardStars"></div>
+          <div style="margin-top:12px">
+            <button id="downloadCertBtn" class="primary">Imprimir / Descargar certificado</button>
+            <button id="backToApp" class="ghost">Volver a la app</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    App educativa creada por <strong>Josue Molina</strong> · Versión demo
+  </footer>
+</div>
+
+<!-- Certificate area (print-only) -->
+<div id="certificate" class="cert-print" style="padding:40px;font-family:Georgia, serif;">
+  <div style="border:8px solid #0b6e86;border-radius:14px;padding:24px;background:linear-gradient(180deg,#fff,#f6fffd);max-width:800px;margin:40px auto;text-align:center">
+    <h1 style="margin:6px 0;color:#0b6170">Certificado de Explorador del Mar</h1>
+    <p style="margin:6px 0;color:#3b6b74">Otorgado por: <strong>Josue Molina</strong></p>
+    <h2 id="certName" style="margin:14px 0 4px 0;color:#0b6e86">[Nombre]</h2>
+    <p id="certDetail" style="margin:6px 0;color:#285">Ha completado actividades educativas en la aplicación "Exploradores del Mar" con una puntuación de <strong id="certScore">0</strong> puntos.</p>
+    <div style="display:flex;justify-content:space-between;margin-top:24px">
+      <div style="text-align:left">Fecha: <span id="certDate"></span></div>
+      <div style="text-align:right">Firma: ______________________</div>
+    </div>
+  </div>
+</div>
+
+<div id="welcomeModal" class="modal">
+  <div class="dialog">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3 style="margin:0;color:#0b6376">¡Hola, Exploradores del Mar!</h3>
+      <button class="ghost" id="closeWelcome">Cerrar</button>
+    </div>
+    <p>Soy <strong>Josue Molina</strong>, tu anfitrión. En esta app encontrarás: galería de animales, juegos interactivos y sonidos infantiles. Toca cualquier tarjeta para escuchar el nombre en inglés y un sonido divertido. ¡A jugar!</p>
+  </div>
+</div>
+
+<script>
+/* =========================
+   Core data + helpers (images external)
+   ========================= */
+const ANIMALS = [
+  { id: "whale", label: "Whale", es:"Ballena" },
+  { id: "seahorse", label: "Seahorse", es:"Caballito de mar" },
+  { id: "dolphin", label: "Dolphin", es:"Delfín" },
+  { id: "crab", label: "Crab", es:"Cangrejo" },
+  { id: "turtle", label: "Turtle", es:"Tortuga" },
+  { id: "shark", label: "Shark", es:"Tiburón" },
+  { id: "stingray", label: "Stingray", es:"Manta raya" },
+  { id: "jellyfish", label: "Jellyfish", es:"Medusa" },
+  { id: "shrimp", label: "Shrimp", es:"Camarón" },
+  { id: "starfish", label: "Starfish", es:"Estrella de mar" },
+  { id: "octopus", label: "Octopus", es:"Pulpo" },
+];
+
+function imgPath(id){ return `images/${id}.png`; }
+function makeImgHTML(id, cls='animal-img', alt=''){ const p = imgPath(id); return `<img src="${p}" class="${cls}" alt="${alt}" onerror="this.style.opacity=0.14;this.title='Image not found: ${p}'" />`; }
+
+/* populate UI */
+const animalsListEl = document.getElementById('animalsList');
+const stageGrid = document.getElementById('stageGrid');
+ANIMALS.forEach(a=>{
+  const div = document.createElement('div');
+  div.className = 'animal-bubble';
+  div.innerHTML = makeImgHTML(a.id,'animal-thumb',`${a.label} thumbnail`)+ `<div><div style="font-weight:800;color:#075">${a.label}</div><div style="font-size:12px;color:#155">${a.es}</div></div>`;
+  div.onclick = ()=>selectAnimal(a.id);
+  animalsListEl.appendChild(div);
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = makeImgHTML(a.id,'animal-img',`${a.label}`)+`<div class="name">${a.label}</div><div class="sub">${a.es}</div>`;
+  card.onclick = ()=>selectAnimal(a.id);
+  stageGrid.appendChild(card);
+});
+
+/* =========================
+   Audio & Speech
+   ========================= */
+let audioCtx = null;
+function ensureAudio(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }
+const SOUND_PATTERNS = {
+  whale:{freqs:[200,240,180],dur:0.5,wave:'sine'},
+  seahorse:{freqs:[800,900,760],dur:0.14,wave:'triangle'},
+  dolphin:{freqs:[900,1200,1000,1400],dur:0.12,wave:'sine'},
+  crab:{freqs:[400,320,420],dur:0.12,wave:'square'},
+  turtle:{freqs:[240,260,220],dur:0.22,wave:'sine'},
+  shark:{freqs:[110,150,130,160],dur:0.18,wave:'sawtooth'},
+  stingray:{freqs:[280,340,300],dur:0.16,wave:'sine'},
+  jellyfish:{freqs:[900,880,980,860],dur:0.12,wave:'triangle'},
+  shrimp:{freqs:[1200,1300,1150],dur:0.08,wave:'square'},
+  starfish:{freqs:[600,760,680],dur:0.12,wave:'triangle'},
+  octopus:{freqs:[500,420,480,360],dur:0.14,wave:'sine'}
+};
+function playPattern(id, when=0){
+  ensureAudio();
+  const pat = SOUND_PATTERNS[id];
+  if(!pat) return;
+  const now = audioCtx.currentTime + when; let t = now;
+  pat.freqs.forEach((f,idx)=>{
+    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+    o.type = pat.wave || 'sine'; o.frequency.value = f; g.gain.value = 0;
+    o.connect(g); g.connect(audioCtx.destination);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.28,t+0.02); g.gain.linearRampToValueAtTime(0.06,t+pat.dur*0.8); g.gain.linearRampToValueAtTime(0,t+pat.dur);
+    o.start(t); o.stop(t+pat.dur+0.02); t += pat.dur;
+  });
+}
+function speakName(text){
+  const ut = new SpeechSynthesisUtterance(text); ut.lang='en-US'; ut.rate=0.95; ut.pitch=1.2;
+  const voices = speechSynthesis.getVoices(); const candidate = voices.find(v=>/child|young|Emma|Samantha|Daniel|Google/gi.test(v.name));
+  if(candidate) ut.voice = candidate;
+  speechSynthesis.cancel(); speechSynthesis.speak(ut);
+}
+
+/* select animal */
+const feedback = document.getElementById('feedback');
+function selectAnimal(id){
+  const animal = ANIMALS.find(x=>x.id===id); if(!animal) return;
+  feedback.textContent = `¡Es ${animal.label}! (${animal.es}) · Anfitrión: Josue Molina`;
+  speakName(animal.label); try{ playPattern(id); }catch(e){}
+  document.getElementById('hostAvatar').animate([{transform:'scale(1)'},{transform:'scale(1.08)'},{transform:'scale(1)'}],{duration:450});
+  // increase score
+  SCORE.points += 5;
+  updateScoreDisplays();
+}
+
+/* =========================
+   Pages control
+   ========================= */
+const btnGallery = document.getElementById('btnGallery'), btnMemory = document.getElementById('btnMemory'), btnGuess = document.getElementById('btnGuess');
+const galleryPanel = document.getElementById('galleryPanel'), memoryGame = document.getElementById('memoryGame'), guessGame = document.getElementById('guessGame');
+btnGallery.onclick = ()=>{ galleryPanel.style.display='block'; memoryGame.classList.remove('game-active'); guessGame.classList.remove('game-active'); }
+btnMemory.onclick = ()=>{ galleryPanel.style.display='none'; memoryGame.classList.add('game-active'); guessGame.classList.remove('game-active'); initMemory(); }
+btnGuess.onclick = ()=>{ galleryPanel.style.display='none'; guessGame.classList.add('game-active'); memoryGame.classList.remove('game-active'); initGuess(); }
+
+/* welcome modal */
+document.getElementById('welcomeModal').style.display = 'flex';
+document.getElementById('closeWelcome').onclick = ()=>document.getElementById('welcomeModal').style.display='none';
+
+/* =========================
+   Score, storage and certificate
+   ========================= */
+const SCORE = {points:0};
+function updateScoreDisplays(){
+  document.getElementById('guessScore').textContent = `Puntos: ${SCORE.points}`;
+  document.getElementById('memScore').textContent = `Intentos: ${memState.attempts} · Aciertos: ${memState.hits}`;
+}
+document.getElementById('saveProgress').onclick = ()=>{
+  const name = document.getElementById('studentName').value || 'Sin nombre';
+  localStorage.setItem('explorador_name', name);
+  localStorage.setItem('explorador_score', JSON.stringify(SCORE));
+  alert('Progreso guardado localmente.');
+}
+
+/* print / download certificate */
+function fillCertificate(){
+  const name = document.getElementById('studentName').value || localStorage.getItem('explorador_name') || 'Nombre del explorador';
+  const score = SCORE.points || 0;
+  document.getElementById('certName').textContent = name;
+  document.getElementById('certScore').textContent = score;
+  document.getElementById('certDate').textContent = (new Date()).toLocaleDateString();
+}
+document.getElementById('printCert').onclick = ()=>{
+  fillCertificate();
+  window.print();
+}
+document.getElementById('downloadCertBtn').onclick = ()=>{
+  fillCertificate();
+  window.print();
+}
+
+/* =========================
+   MEMORY GAME
+   ========================= */
+let memState = {board:[], first:null, second:null, attempts:0, hits:0, lock:false};
+const memBoardEl = document.getElementById('memoryBoard'), memScoreEl = document.getElementById('memScore'), memRestart = document.getElementById('memRestart');
+
+function initMemory(){
+  const pool = ANIMALS.slice(0);
+  const pairCount = Math.min(Math.max(6, Math.floor(ANIMALS.length/1)), ANIMALS.length);
+  const chosen = shuffle(pool).slice(0, pairCount);
+  let board = [];
+  chosen.forEach(a=>{ board.push(Object.assign({},a)); board.push(Object.assign({},a)); });
+  board = shuffle(board);
+  memState = {board, first:null, second:null, attempts:0, hits:0, lock:false};
+  renderMemory();
+}
+
+function renderMemory(){
+  memBoardEl.innerHTML = '';
+  memState.board.forEach((a, idx)=>{
+    const card = document.createElement('div');
+    card.style.background = '#e9fbff';
+    card.style.borderRadius = '10px';
+    card.style.padding = '8px';
+    card.style.minHeight = '86px';
+    card.style.display = 'flex';
+    card.style.alignItems = 'center';
+    card.style.justifyContent = 'center';
+    card.style.cursor = 'pointer';
+    card.style.boxShadow = 'inset 0 0 0 2px rgba(255,255,255,0.4)';
+    card.dataset.index = idx;
+    if(a.matched) {
+      card.innerHTML = `<img src="${imgPath(a.id)}" class="mem-thumb" alt="${a.label}" onerror="this.style.opacity=0.12" />` + `<div style="font-weight:800;color:#064;margin-left:6px">${a.label}</div>`;
+    } else if(memState.first === idx || memState.second === idx){
+      card.innerHTML = `<img src="${imgPath(a.id)}" class="mem-thumb" alt="${a.label}" onerror="this.style.opacity=0.12" />` + `<div style="font-weight:800;color:#064;margin-left:6px">${a.label}</div>`;
+    } else {
+      card.innerHTML = `<div style="width:40px;height:40px;border-radius:8px;background:linear-gradient(90deg,#79d7f9,#59b1cd)"></div>`;
+    }
+    card.onclick = ()=>memFlip(idx);
+    memBoardEl.appendChild(card);
+  });
+  updateScoreDisplays();
+}
+
+function memFlip(index){
+  if(memState.lock) return;
+  if(memState.first === index || memState.second === index) return;
+  if(memState.board[index].matched) return;
+  if(memState.first === null){
+    memState.first = index; renderMemory(); speakName(memState.board[index].label); playPattern(memState.board[index].id); return;
+  }
+  memState.second = index; renderMemory(); memState.lock = true; memState.attempts++;
+  const a = memState.board[memState.first]; const b = memState.board[memState.second];
+  if(a.id === b.id){
+    setTimeout(()=>{
+      a.matched = b.matched = true; memState.hits++; memState.first = memState.second = null; memState.lock = false; SCORE.points += 10; updateScoreDisplays(); renderMemory(); playVictory();
+    },600);
+  } else {
+    setTimeout(()=>{ memState.first = null; memState.second = null; memState.lock = false; renderMemory(); },900);
+  }
+}
+memRestart.onclick = initMemory;
+
+/* small victory jingle */
+function playVictory(){ ensureAudio(); const now = audioCtx.currentTime; [880,1100,1320].forEach((f,i)=>{ const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='triangle'; o.frequency.value=f; g.gain.value=0; o.connect(g); g.connect(audioCtx.destination); g.gain.setValueAtTime(0, now+i*0.08); g.gain.linearRampToValueAtTime(0.22, now+i*0.08 + 0.02); g.gain.linearRampToValueAtTime(0, now+i*0.08+0.2); o.start(now+i*0.08); o.stop(now+i*0.08+0.22); }); }
+
+/* =========================
+   GUESS THE SOUND
+   ========================= */
+let guessState = {current:null, choices:[], score:0};
+const guessArea = document.getElementById('guessArea'), playSoundBtn = document.getElementById('playSoundBtn'), guessScore = document.getElementById('guessScore'), guessNext = document.getElementById('guessNext');
+function initGuess(){ guessState.score = 0; guessScore.textContent = `Puntos: ${guessState.score}`; newGuessRound(); }
+function newGuessRound(){ const target = ANIMALS[Math.floor(Math.random()*ANIMALS.length)]; let others = ANIMALS.filter(a=>a.id !== target.id); others = shuffle(others).slice(0,3); const choices = shuffle([target, ...others]); guessState.current = target; guessState.choices = choices; renderGuess(); }
+function renderGuess(){ guessArea.innerHTML = ''; guessState.choices.forEach(c=>{ const btn=document.createElement('button'); btn.className='card'; btn.style.minHeight='60px'; btn.innerHTML = `<div style="display:flex;align-items:center;gap:8px"><img src="${imgPath(c.id)}" class="mem-thumb" alt="${c.label}" onerror="this.style.opacity=0.12" /><div style="font-weight:800;color:#044">${c.label}</div></div>`; btn.onclick = ()=>tryGuess(c.id, btn); guessArea.appendChild(btn); }); }
+playSoundBtn.onclick = ()=>{ playPattern(guessState.current.id); speakName(guessState.current.label); }
+guessNext.onclick = ()=> newGuessRound();
+function tryGuess(id, btnEl){ if(id === guessState.current.id){ guessState.score += 10; SCORE.points += 8; btnEl.style.outline = '3px solid #34c759'; feedback.textContent = `¡Correcto! Era ${guessState.current.label}. Buen trabajo.`; playVictory(); guessScore.textContent = `Puntos: ${guessState.score}`; updateScoreDisplays(); setTimeout(()=> newGuessRound(), 900); } else { guessState.score = Math.max(0, guessState.score - 2); SCORE.points = Math.max(0, SCORE.points - 2); btnEl.style.outline = '3px solid #ff6b6b'; feedback.textContent = `No es ese. Intenta otra vez. Anfitrión: Josue Molina`; guessScore.textContent = `Puntos: ${guessState.score}`; updateScoreDisplays(); } }
+
+/* Utility shuffle */
+function shuffle(arr){ const a = arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
+
+/* =========================
+   Confetti engine (simple)
+   ========================= */
+const confettiCanvas = document.getElementById('confetti');
+const confettiCtx = confettiCanvas.getContext('2d');
+function resizeConfetti(){ confettiCanvas.width = confettiCanvas.clientWidth; confettiCanvas.height = confettiCanvas.clientHeight; }
+window.addEventListener('resize', resizeConfetti); resizeConfetti();
+let confettiPieces = [];
+function spawnConfetti(amount=60){
+  const W = confettiCanvas.width, H = confettiCanvas.height;
+  confettiPieces = [];
+  const colors = ['#ffd36a','#ff9aa2','#b6f0e8','#b6d3ff','#c98edb'];
+  for(let i=0;i<amount;i++){
+    confettiPieces.push({
+      x: Math.random()*W,
+      y: Math.random()*-H,
+      w: 6+Math.random()*10,
+      h: 6+Math.random()*12,
+      vx: -2 + Math.random()*4,
+      vy: 1 + Math.random()*4,
+      color: colors[Math.floor(Math.random()*colors.length)],
+      rot: Math.random()*360,
+      rotSpeed: -3 + Math.random()*6
+    });
+  }
+  animateConfetti();
+}
+let confettiAnimId = null;
+function animateConfetti(){
+  if(confettiAnimId) cancelAnimationFrame(confettiAnimId);
+  function frame(){
+    confettiCtx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+    confettiPieces.forEach(p=>{
+      p.x += p.vx; p.y += p.vy; p.rot += p.rotSpeed; p.vy += 0.05;
+      confettiCtx.save();
+      confettiCtx.translate(p.x,p.y); confettiCtx.rotate(p.rot * Math.PI/180);
+      confettiCtx.fillStyle = p.color; confettiCtx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+      confettiCtx.restore();
+    });
+    confettiAnimId = requestAnimationFrame(frame);
+  }
+  frame();
+  setTimeout(()=>{ if(confettiAnimId) cancelAnimationFrame(confettiAnimId); confettiCtx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); },3000);
+}
+
+/* =========================
+   Final screen logic
+   ========================= */
+const openFinalBtn = document.getElementById('openFinal'); const finalScreen = document.getElementById('finalScreen'); const backToApp = document.getElementById('backToApp'); const rewardStars = document.getElementById('rewardStars'); const finalTitle = document.getElementById('finalTitle'); const finalMsg = document.getElementById('finalMsg');
+openFinalBtn.onclick = ()=>showFinal();
+backToApp.onclick = ()=>{ finalScreen.classList.remove('final-active'); document.getElementById('galleryPanel').style.display='block'; }
+function showFinal(){
+  document.getElementById('galleryPanel').style.display='none';
+  memoryGame.classList.remove('game-active'); guessGame.classList.remove('game-active');
+  finalScreen.classList.add('final-active');
+  // populate stars based on SCORE
+  rewardStars.innerHTML=''; const points = SCORE.points || 0; const starCount = Math.min(5, Math.floor(points/20)+1);
+  for(let i=0;i<starCount;i++){ const s = document.createElement('div'); s.className='star delay-'+i; s.textContent='★'; rewardStars.appendChild(s); }
+  finalTitle.textContent = `¡Felicidades! ${document.getElementById('studentName').value || localStorage.getItem('explorador_name') || ''}`;
+  finalMsg.textContent = `Obtuviste ${points} puntos. ¡Gran trabajo explorando el mar!`;
+  spawnConfetti(80);
+}
+
+/* =========================
+   Background music control
+   ========================= */
+const musicToggle = document.getElementById('musicToggle'), musicVol = document.getElementById('musicVol');
+let bgAudio = null, bgGain = null;
+musicToggle.onclick = ()=>{
+  if(!bgAudio){
+    ensureAudio();
+    bgAudio = audioCtx.createOscillator(); bgGain = audioCtx.createGain();
+    bgAudio.type='sine'; bgAudio.frequency.value = 220; bgGain.gain.value = 0;
+    const lfo = audioCtx.createOscillator(); const lfoGain = audioCtx.createGain();
+    lfo.frequency.value = 0.25; lfo.type='sine'; lfoGain.gain.value = 15;
+    lfo.connect(lfoGain); lfoGain.connect(bgAudio.frequency);
+    bgAudio.connect(bgGain); bgGain.connect(audioCtx.destination);
+    lfo.start(); bgAudio.start();
+    bgGain.gain.linearRampToValueAtTime(parseFloat(musicVol.value)*0.15, audioCtx.currentTime + 0.2);
+    musicToggle.textContent = '⏸ Música';
+  } else {
+    // stop bg
+    try{ bgGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2); setTimeout(()=>{ bgAudio.stop(); bgAudio = null; bgGain = null; },250); }catch(e){ bgAudio = null; bgGain = null; }
+    musicToggle.textContent = '▶ Música';
+  }
+}
+musicVol.oninput = ()=>{ if(bgGain) bgGain.gain.setValueAtTime(parseFloat(musicVol.value)*0.15, audioCtx.currentTime); }
+
+/* =========================
+   Small accessibility & start
+   ========================= */
+document.addEventListener('DOMContentLoaded', ()=>{
+  galleryPanel.style.display='block';
+  memoryGame.classList.remove('game-active'); guessGame.classList.remove('game-active');
+  initMemory(); initGuess();
+  speechSynthesis.getVoices();
+  document.getElementById('hostAvatar').textContent = 'JM';
+  const nameLocal = localStorage.getItem('explorador_name'); if(nameLocal) document.getElementById('studentName').value = nameLocal;
+});
+
+/* keyboard shortcuts */
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'm'){ btnMemory.click(); }
+  if(e.key === 'g'){ btnGuess.click(); }
+  if(e.key === 'h'){ btnGallery.click(); }
+});
+
+/* =========================
+   Expose helper to download the full web app as zip (optional)
+   ========================= */
+</script>
+</body>
+</html>
